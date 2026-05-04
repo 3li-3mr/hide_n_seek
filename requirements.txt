@@ -1,5 +1,5 @@
 # GUI Framework (Role 3)
-PyQt6
+PySide6
 
 # Operations Research & Math Engine (Role 1)
 scipy
