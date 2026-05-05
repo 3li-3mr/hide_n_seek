@@ -29,3 +29,9 @@ class SimulationResult:
     seeker_wins: int
     total_score_computer: float
     total_score_player: float
+
+@dataclass
+class StrategyDetails:
+    payoff_matrix: List[List[float]] 
+    probabilities: List[float] 
+    game_value: float

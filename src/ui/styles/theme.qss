@@ -1,0 +1,206 @@
+QLabel, QPushButton, QRadioButton, QLineEdit {
+    font-family: 'Orbitron';
+}
+
+QMainWindow {
+    background-color: #121212;
+}
+
+/* The Main Title */
+QLabel#MainTitle {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 20px;
+}
+
+/* The Floating Box */
+QFrame#FloatingCard {
+    background-color: #1e1e1e;
+    border: 2px solid #333333;
+    border-radius: 15px;
+    padding: 30px;
+    /* This sets a fixed width so the box doesn't stretch across the whole screen */
+    max-width: 400px; 
+}
+
+/* Standard Text/Radios */
+QRadioButton {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Colored Roles from Sketch */
+QRadioButton#RadioHider { color: #58a6ff; } /* Blue */
+QRadioButton#RadioSeeker { color: #ff7b72; } /* Red */
+
+/* Input Fields */
+QLineEdit {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #555555;
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* --- THE GAME BUTTON ARCHITECTURE --- */
+QPushButton {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 900; /* Extra bold */
+    border-radius: 20px; /* Pill shape */
+    padding: 12px 20px;
+    qproperty-cursor: pointer; /* Changes the mouse to a hand */
+}
+
+/* Specific Style: Start Button (Green) */
+QPushButton#BtnStart {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2ea043, stop: 1 #238636);
+    border: 1px solid #111;
+    border-bottom: 5px solid #0f5323; /* The 3D Depth */
+}
+
+/* Hover State (Brighter glow) */
+QPushButton#BtnStart:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #3fb950, stop: 1 #2ea043);
+}
+
+/* Pressed State (The physical push animation) */
+QPushButton#BtnStart:pressed {
+    margin-top: 4px; /* Push the button down on the Y axis */
+    border-bottom: 1px solid #0f5323; /* Crush the 3D depth flat */
+    background-color: #238636;
+}
+
+/* Specific Style: Simulate Button (Orange) */
+QPushButton#BtnSim {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #d29922, stop: 1 #9e6a03);
+    border: 1px solid #111;
+    border-bottom: 5px solid #6b4600;
+}
+QPushButton#BtnSim:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #e3b341, stop: 1 #d29922);
+}
+QPushButton#BtnSim:pressed {
+    margin-top: 4px;
+    border-bottom: 1px solid #6b4600;
+    background-color: #9e6a03;
+}
+
+/* Dynamic Main Background based on Turn */
+QMainWindow[active_turn="hider"] {
+    background-color: #0a1128; /* Very Dark Blue */
+}
+QMainWindow[active_turn="seeker"] {
+    background-color: #2b0a0a; /* Very Dark Red */
+}
+
+/* Dynamic Turn Indicator Text */
+QLabel#TurnText {
+    font-size: 24px;
+    font-weight: bold;
+}
+QLabel#TurnText[active_turn="hider"] {
+    color: #58a6ff; /* Match Hider Scoreboard Blue */
+}
+QLabel#TurnText[active_turn="seeker"] {
+    color: #ff7b72; /* Match Seeker Scoreboard Red */
+}
+
+/* Scoreboard Elements */
+QLabel#ScoreHider {
+    background-color: #1f3a5f;
+    color: #58a6ff;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 20px;
+}
+QLabel#ScoreSeeker {
+    background-color: #5f1f1f;
+    color: #ff7b72;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+/* Grid Cell Difficulties */
+QPushButton.CellHard { background-color: #ff7b72; color: #000; }
+QPushButton.CellNeutral { background-color: #8b949e; color: #000; }
+QPushButton.CellEasy { background-color: #58a6ff; color: #000; }
+
+
+/* The new Player Role Indicator */
+QLabel#PlayerRoleText {
+    color: #8b949e; /* Muted grey */
+    font-size: 14px;
+    font-style: italic;
+    margin-bottom: 20px; /* Space between text and grid */
+}
+
+/* Top Bar Small Buttons (Reset, Details, Menu) */
+QPushButton#BtnSmall {
+    background-color: #21262d;
+    color: #cdd6f4;
+    border: 1px solid #30363d;
+    border-bottom: 3px solid #161b22; /* Smaller 3D depth */
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+QPushButton#BtnSmall:hover {
+    background-color: #30363d;
+}
+
+QPushButton#BtnSmall:pressed {
+    margin-top: 2px;
+    border-bottom: 1px solid #161b22; /* Crush depth */
+}
+
+/* Refined Grid Buttons to ensure they look like clickable squares */
+QPushButton.CellHard, QPushButton.CellNeutral, QPushButton.CellEasy {
+    border-radius: 4px;
+    border: 1px solid #111;
+    border-bottom: 4px solid #111; /* 3D effect for grid blocks */
+}
+
+QPushButton.CellHard:pressed, QPushButton.CellNeutral:pressed, QPushButton.CellEasy:pressed {
+    margin-top: 3px;
+    border-bottom: 1px solid #111;
+}
+
+/* -- The Red Button (Yes, Main Menu) -- */
+QPushButton#BtnRed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #f85149, stop: 1 #da3633);
+    border: 1px solid #111;
+    border-bottom: 5px solid #8e1515;
+}
+QPushButton#BtnRed:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ff7b72, stop: 1 #f85149);
+}
+QPushButton#BtnRed:pressed {
+    margin-top: 4px;
+    border-bottom: 1px solid #8e1515;
+    background-color: #da3633;
+}
+
+/* -- The Blue Button (Reset, No) -- */
+QPushButton#BtnBlue {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #58a6ff, stop: 1 #1f6feb);
+    border: 1px solid #111;
+    border-bottom: 5px solid #113d8f;
+}
+QPushButton#BtnBlue:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #79c0ff, stop: 1 #58a6ff);
+}
+QPushButton#BtnBlue:pressed {
+    margin-top: 4px;
+    border-bottom: 1px solid #113d8f;
+    background-color: #1f6feb;
+}
