@@ -75,6 +75,10 @@ class GameScreen(QWidget):
         self.btn_menu = QPushButton("Main Menu")
         self.btn_menu.setObjectName("BtnRed")
         self.btn_menu.clicked.connect(self._handle_main_menu)
+
+        # --- NEW: Round Counter ---
+        self.lbl_round = QLabel("Round: 1")
+        self.lbl_round.setStyleSheet("font-size: 16px; font-weight: bold; color: #8b949e; margin-right: 15px;")
         
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_menu)
@@ -84,6 +88,7 @@ class GameScreen(QWidget):
         top_bar.addWidget(self.lbl_score_seeker)
         top_bar.addWidget(self.lbl_seeker_name)
         top_bar.addStretch()
+        top_bar.addWidget(self.lbl_round)
         top_bar.addWidget(self.btn_details)
         
         self.main_layout.addLayout(top_bar)
@@ -109,9 +114,10 @@ class GameScreen(QWidget):
 
     def setup_board(self, config: dict):
         self._clear_grid()
+        self.cell_buttons = {}
 
-        human_role = config["role"]
-        self.lbl_player_role.setText(f"( You are playing as the {human_role} )")
+        self.human_role = config["role"].lower()
+        self.lbl_player_role.setText(f"( You are playing as the {self.human_role} )")
         
         if config["mode"] == "simulation":
             self.lbl_turn.setText("SIMULATING 100 ROUNDS...")
@@ -153,20 +159,29 @@ class GameScreen(QWidget):
                 btn = QPushButton()
                 btn.setFixedSize(60, 60)
                 
-                # Mock a random difficulty for testing the CSS
+                # Make the font large for the H and S markers
+                btn.setStyleSheet("font-size: 24px; font-weight: bold;") 
+                
                 mock_place_type = random.choice(list(PlaceType)) 
                 css_class = type_to_css[mock_place_type]
                 btn.setProperty("class", css_class) 
                 
                 btn.clicked.connect(lambda checked=False, r=r, c=c: self._handle_grid_click(r, c))
                 self.grid_layout.addWidget(btn, r, c)
-
+                
+                # Store the button reference using a tuple of its coordinates
+                self.cell_buttons[(r, c)] = btn
         self.update_turn("hider")
+
+    def show_round_outcome(self, message: str, color_hex: str):
+        """Temporarily overrides the turn text to show who won the round."""
+        self.lbl_turn.setText(message)
+        self.lbl_turn.setStyleSheet(f"font-weight: bold; font-size: 20px; color: {color_hex};")
 
     # may notify game class
     def update_turn(self, current_turn: str):
         self.lbl_turn.setText(f"{current_turn.capitalize()}'s Turn")
-
+        self.lbl_turn.setStyleSheet("")
         self.lbl_turn.setProperty("active_turn", current_turn)
         self.lbl_turn.style().unpolish(self.lbl_turn)
         self.lbl_turn.style().polish(self.lbl_turn)
@@ -319,3 +334,33 @@ class GameScreen(QWidget):
             self.btn_details.setText("Show Details")
         else:
             self.btn_details.setText("Hide Details")
+
+    def set_round(self, round_num: int):
+        self.lbl_round.setText(f"Round: {round_num}")
+
+    def reveal_choices(self, hider_r: int, hider_c: int, seeker_r: int, seeker_c: int):
+        """Displays markers on the grid showing where both players went."""
+        self.clear_markers()
+        
+        hider_pos = (hider_r, hider_c)
+        seeker_pos = (seeker_r, seeker_c)
+        
+        if hider_pos == seeker_pos:
+            # They chose the exact same spot
+            btn = self.cell_buttons.get(hider_pos)
+            if btn:
+                btn.setText("💥") # Collision/Found
+        else:
+            # Different spots
+            btn_h = self.cell_buttons.get(hider_pos)
+            if btn_h:
+                btn_h.setText("H")
+                
+            btn_s = self.cell_buttons.get(seeker_pos)
+            if btn_s:
+                btn_s.setText("S")
+
+    def clear_markers(self):
+        """Removes all text markers from the grid."""
+        for btn in self.cell_buttons.values():
+            btn.setText("")
