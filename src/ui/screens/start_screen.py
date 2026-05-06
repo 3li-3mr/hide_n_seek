@@ -68,9 +68,38 @@ class StartScreen(QWidget):
         card_layout.addLayout(role_layout)
 
         # proximity selection
+        prox_layout = QHBoxLayout()
+        prox_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
         self.check_proximity = QCheckBox("Enable Proximity Penalties")
-        self.check_proximity.setStyleSheet("color: #ffffff; font-size: 14px; margin-bottom: 15px;")
-        card_layout.addWidget(self.check_proximity)
+        self.check_proximity.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.check_proximity.setStyleSheet("""
+            QCheckBox {
+                color: #cdd6f4;
+                font-size: 16px;
+                font-weight: bold;
+                font-family: 'Orbitron';
+                spacing: 10px;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                border: 2px solid #58a6ff;
+                background-color: #21262d;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #58a6ff;
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid #79c0ff;
+            }
+        """)
+        prox_layout.addWidget(self.check_proximity)
+        
+        card_layout.addSpacing(10)
+        card_layout.addLayout(prox_layout)
+        card_layout.addSpacing(15)
 
         # buttons
         self.btn_start = QPushButton("Start Game")

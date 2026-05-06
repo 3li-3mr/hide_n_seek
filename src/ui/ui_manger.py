@@ -50,8 +50,7 @@ class UIManager(QMainWindow):
     def reveal_turn_outcome(self, hider_r: int, hider_c: int, seeker_r: int, seeker_c: int):
         self.game_screen.reveal_choices(hider_r, hider_c, seeker_r, seeker_c)
 
-    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score, seeker_score):
-        """Displays the final results after a 100-round simulation."""
-        msg = f"Hider Wins: {hider_wins} (Score: {hider_score})\nSeeker Wins: {seeker_wins} (Score: {seeker_score})"
-        dialog = ConfirmDialog("Simulation Complete", msg, self)
-        dialog.exec()
+    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int):
+        self.game_screen.show_simulation_results(
+            hider_wins, seeker_wins, hider_score, seeker_score
+        )

@@ -39,7 +39,8 @@ class GameScreen(QWidget):
         # 2. Right Half (The Details Panel)
         self.right_container = QWidget()
         right_layout = QVBoxLayout()
-        right_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        # REMOVED AlignHCenter so the panel can stretch to fill the right half
+        right_layout.setAlignment(Qt.AlignmentFlag.AlignTop) 
         
         self._build_details_panel() 
         right_layout.addWidget(self.details_panel)
@@ -120,7 +121,7 @@ class GameScreen(QWidget):
         self.lbl_player_role.setText(f"( You are playing as the {self.human_role} )")
         
         if config["mode"] == "simulation":
-            self.lbl_turn.setText("SIMULATING 100 ROUNDS...")
+            self.lbl_turn.setText("Simulation Complete")
             self.lbl_player_role.setText("( CPU vs CPU )")
             return
 
@@ -201,104 +202,115 @@ class GameScreen(QWidget):
             self.action_callback({"action": "reset_game"})
 
     def _build_details_panel(self):        
-        self.details_panel = QFrame()
-        self.details_panel.setObjectName("FloatingCard")
-        # REMOVED setFixedWidth(300) so it expands nicely into its half
+        # Scrapped the "FloatingCard" frame. It's now a clean, expansive widget.
+        self.details_panel = QWidget()
         
         panel_layout = QVBoxLayout()
+        # Add side margins so it doesn't touch the center split or right edge
+        panel_layout.setContentsMargins(40, 0, 40, 0) 
         self.details_panel.setLayout(panel_layout)
         
-        title = QLabel("Optimal Strategy")
+        title = QLabel("Optimal Strategy Breakdown")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("font-size: 22px; font-weight: bold; color: #58a6ff; margin-bottom: 10px;")
+        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #58a6ff; margin-bottom: 25px;")
         
-        self.details_matrix_layout = QGridLayout()
+        # Changed to a VBox for cleaner vertical stacking
+        self.details_content_layout = QVBoxLayout()
+        self.details_content_layout.setSpacing(25) # More breathing room between sections
         
         panel_layout.addWidget(title)
-        panel_layout.addLayout(self.details_matrix_layout)
+        panel_layout.addLayout(self.details_content_layout)
         panel_layout.addStretch()
 
     def update_details(self, details: 'StrategyDetails'):
-        while self.details_matrix_layout.count():
-            item = self.details_matrix_layout.takeAt(0)
+        while self.details_content_layout.count():
+            item = self.details_content_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
             elif item.layout() is not None:
                 self._clear_layout(item.layout())
 
-        current_row = 0
-
-        # --- SECTION 1: THE SCALED PAYOFF MATRIX ---
+        # --- SECTION 1: THE SCROLLABLE PAYOFF MATRIX ---
         if details.payoff_matrix:
             lbl_matrix_title = QLabel("Initial Payoff Matrix")
-            lbl_matrix_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #cdd6f4; margin-bottom: 10px;")
-            self.details_matrix_layout.addWidget(lbl_matrix_title, current_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
-            current_row += 1
+            lbl_matrix_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #cdd6f4;")
+            lbl_matrix_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.details_content_layout.addWidget(lbl_matrix_title)
             
-            matrix_grid = QGridLayout()
-            matrix_grid.setSpacing(5) # Match the game board spacing
+            matrix_scroll = QScrollArea()
+            # WidgetResizable must be True so it fills the area, but the fixed size labels 
+            # will force the scrollbars to appear when it gets too large
+            matrix_scroll.setWidgetResizable(True)
+            matrix_scroll.setStyleSheet("QScrollArea { border: 1px solid #30363d; border-radius: 8px; background-color: #161b22; }")
+            
+            matrix_content = QWidget()
+            matrix_content.setStyleSheet("background-color: transparent;")
+            
+            matrix_grid = QGridLayout(matrix_content)
+            matrix_grid.setSpacing(8)
+            # This safely centers small grids (like 2x2) but allows big grids to scroll properly
+            matrix_grid.setAlignment(Qt.AlignmentFlag.AlignCenter) 
+            
             for r, row_data in enumerate(details.payoff_matrix):
                 for c, val in enumerate(row_data):
                     lbl_val = QLabel(str(val))
                     lbl_val.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                    # Force the labels to be large squares (50x50 or 60x60 to match board)
-                    lbl_val.setFixedSize(55, 55) 
-                    lbl_val.setStyleSheet("background-color: #21262d; border: 2px solid #30363d; border-radius: 4px; font-size: 16px; font-weight: bold;")
+                    lbl_val.setFixedSize(60, 60) # Forces Qt to expand the grid and trigger scrolling
+                    lbl_val.setStyleSheet("background-color: #21262d; border: 2px solid #30363d; border-radius: 6px; font-size: 18px; font-weight: bold;")
                     matrix_grid.addWidget(lbl_val, r, c)
             
-            # Wrap the grid in a container to center it perfectly
-            matrix_container = QWidget()
-            matrix_container.setLayout(matrix_grid)
-            self.details_matrix_layout.addWidget(matrix_container, current_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
-            current_row += 1
+            matrix_scroll.setWidget(matrix_content)
+            self.details_content_layout.addWidget(matrix_scroll, 3)
 
-        # --- SECTION 2: THE SCROLLABLE PROBABILITIES ---
+        # --- SECTION 2: PROBABILITIES ---
         lbl_prob_title = QLabel("Optimal Probabilities")
-        lbl_prob_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #cdd6f4; margin-top: 20px; margin-bottom: 5px;")
-        self.details_matrix_layout.addWidget(lbl_prob_title, current_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
-        current_row += 1
+        lbl_prob_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #cdd6f4;")
+        lbl_prob_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.details_content_layout.addWidget(lbl_prob_title)
 
-        # Create the Scroll Area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        # Remove ugly borders and make the background transparent to match the card
-        scroll_area.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+        scroll_area.setStyleSheet("QScrollArea { border: 1px solid #30363d; border-radius: 8px; background-color: #161b22; }")
         
-        # Create a container widget to sit inside the scroll area
         scroll_content = QWidget()
         scroll_content.setStyleSheet("background-color: transparent;")
         
-        # The grid layout goes ON the scroll_content, not the main panel
         prob_grid = QGridLayout(scroll_content)
-        prob_grid.addWidget(QLabel("<b>Grid Coord</b>"), 0, 0)
-        prob_grid.addWidget(QLabel("<b>Probability</b>"), 0, 1)
+        prob_grid.setSpacing(10)
+        
+        # Headers
+        h1 = QLabel("Grid Coord")
+        h2 = QLabel("Probability")
+        for h in [h1, h2]:
+            h.setStyleSheet("font-size: 16px; font-weight: bold; color: #ffffff;")
+            h.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        prob_grid.addWidget(h1, 0, 0)
+        prob_grid.addWidget(h2, 0, 1)
 
         for i, prob in enumerate(details.probabilities):
-            # --- THE 1D TO 2D MATH ---
-            # Using 1-based indexing (e.g., Row 1, Col 1)
             row_idx = (i // self.board_cols) + 1
             col_idx = (i % self.board_cols) + 1
             
             lbl_move = QLabel(f"({row_idx}, {col_idx})")
             lbl_prob = QLabel(f"{prob:.3f}")
-            lbl_move.setStyleSheet("font-size: 14px; color: #8b949e;")
-            lbl_prob.setStyleSheet("font-size: 14px; color: #8b949e;")
+            
+            for lbl in [lbl_move, lbl_prob]:
+                lbl.setStyleSheet("font-size: 16px; color: #8b949e;")
+                lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
             prob_grid.addWidget(lbl_move, i+1, 0)
             prob_grid.addWidget(lbl_prob, i+1, 1)
             
-        # Put the populated container into the scroll area
         scroll_area.setWidget(scroll_content)
-        
-        # Add the entire scroll area to the main details layout
-        self.details_matrix_layout.addWidget(scroll_area, current_row, 0, 1, 2)
-        current_row += 1
+        self.details_content_layout.addWidget(scroll_area, 1)
 
         # --- SECTION 3: GAME VALUE ---
         val_lbl = QLabel(f"Expected Game Value: {details.game_value:.2f}")
-        val_lbl.setStyleSheet("color: #ff7b72; margin-top: 20px; font-weight: bold; font-size: 16px;")
-        self.details_matrix_layout.addWidget(val_lbl, current_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
+        val_lbl.setStyleSheet("color: #ff7b72; font-weight: bold; font-size: 22px;")
+        val_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.details_content_layout.addWidget(val_lbl)
 
     def _clear_layout(self, layout):
         """Helper method to safely destroy nested layouts."""
@@ -348,3 +360,52 @@ class GameScreen(QWidget):
         """Removes all text markers from the grid."""
         for btn in self.cell_buttons.values():
             btn.setText("")
+
+    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int):
+        """Builds a beautiful summary card in place of the empty game grid."""
+        self._clear_grid()
+        
+        results_widget = QWidget()
+        results_layout = QVBoxLayout()
+        results_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        title = QLabel("Simulation Complete")
+        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #58a6ff; margin-bottom: 20px;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        score_box = QFrame()
+        score_box.setStyleSheet("background-color: #21262d; border: 2px solid #30363d; border-radius: 10px;")
+        score_layout = QGridLayout(score_box)
+        score_layout.setContentsMargins(40, 30, 40, 30)
+        score_layout.setSpacing(20)
+        
+        # --- Hider Stats ---
+        lbl_h_title = QLabel("Hider Score")
+        lbl_h_title.setStyleSheet("font-size: 18px; color: #8b949e;")
+        lbl_h_score = QLabel(str(hider_score))
+        lbl_h_score.setStyleSheet("font-size: 48px; font-weight: bold; color: #ffffff;")
+        lbl_h_wins = QLabel(f"{hider_wins} Wins")
+        lbl_h_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #79c0ff;") # Blue highlight
+        
+        # --- Seeker Stats ---
+        lbl_s_title = QLabel("Seeker Score")
+        lbl_s_title.setStyleSheet("font-size: 18px; color: #8b949e;")
+        lbl_s_score = QLabel(str(seeker_score))
+        lbl_s_score.setStyleSheet("font-size: 48px; font-weight: bold; color: #ffffff;")
+        lbl_s_wins = QLabel(f"{seeker_wins} Wins")
+        lbl_s_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff7b72;") # Red highlight
+        
+        # Add to grid
+        score_layout.addWidget(lbl_h_title, 0, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+        score_layout.addWidget(lbl_h_score, 1, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+        score_layout.addWidget(lbl_h_wins, 2, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        score_layout.addWidget(lbl_s_title, 0, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+        score_layout.addWidget(lbl_s_score, 1, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+        score_layout.addWidget(lbl_s_wins, 2, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        results_layout.addWidget(title)
+        results_layout.addWidget(score_box)
+        results_widget.setLayout(results_layout)
+
+        self.grid_layout.addWidget(results_widget, 0, 0)
