@@ -8,7 +8,8 @@ class UIManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Hide 'n' Seek")
-        self.setFixedSize(800, 600)
+        self.setMinimumSize(800, 600)
+        self.resize(1000, 700)
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)

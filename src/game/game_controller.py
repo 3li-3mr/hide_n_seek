@@ -1,3 +1,5 @@
+import numpy as np
+from PySide6.QtCore import QTimer
 from src.engine import GameEngine
 from src.core.contracts import PlaceType as UIPlaceType, StrategyDetails
 
@@ -15,12 +17,18 @@ class GameController:
         self.engine = None 
         self.result = None 
         self.human_role = None
+        self.hider_score = 0.0
+        self.seeker_score = 0.0
+        self.current_round = 1
 
     def start_game(self, config):
         #Called when the user clicks "Start Game" or "Start Sim" on the start screen.
 
         is_2d = config["is_2d"]
         self.human_role = config["role"].lower()
+        self.hider_score = 0.0
+        self.seeker_score = 0.0
+        self.current_round = 1
 
         if is_2d:
             N = config["rows"] * config["cols"]
@@ -58,4 +66,106 @@ class GameController:
             probabilities=self.result.computer_probabilities.tolist(),
             game_value=self.result.game_value,
         )
-        self.ui.route_to_game(config)
+        if config["mode"] == "simulation":
+            self.ui.route_to_game(config)
+            self._run_simulation()
+        else:
+            self.ui.route_to_game(config)
+
+    # --- GAME LOOP HANDLERS (called by UI after a move) ---
+    def handle_action(self, payload):
+        
+        action = payload.get("action")
+        if action == "human_move":
+            self._handle_human_move(payload["row"], payload["col"])
+        elif action == "reset_game":
+            self._handle_reset()
+
+    def _handle_human_move(self, human_row, human_col):
+        # 1. Computer samples its optimal strategy
+        comp_idx = int(np.random.choice(self.result.N, p=self.result.computer_probabilities))
+        comp_cell = self.result.cells[comp_idx]
+
+        # 2. Convert human's 2D/1D click to a flat index
+        if self.result.grid_2d_enabled:
+            side = int(self.result.N ** 0.5)
+            human_idx = human_row * side + human_col
+        else:
+            human_idx = human_col
+
+        # 3. Determine roles for scoring
+        if self.human_role == "hider":
+            hider_idx, seeker_idx = human_idx, comp_idx
+            hider_r, hider_c = human_row, human_col
+            seeker_r, seeker_c = comp_cell.row, comp_cell.col
+        else:
+            seeker_idx, hider_idx = human_idx, comp_idx
+            seeker_r, seeker_c = human_row, human_col
+            hider_r, hider_c = comp_cell.row, comp_cell.col
+
+        # 4. Compute score
+        score = float(self.result.payoff_matrix[hider_idx, seeker_idx])
+        self.hider_score += score
+        self.seeker_score -= score
+        self.current_round += 1
+
+        # 5. Tell UI to show "Computer thinking..." briefly
+        self.ui.game_screen.lbl_turn.setText("Computer is thinking...")
+        self.ui.game_screen.grid_container.setEnabled(False)
+
+        # 6. Reveal after 1 second
+        QTimer.singleShot(1000, lambda: self._reveal_result(
+            hider_r, hider_c, seeker_r, seeker_c, hider_idx, seeker_idx
+        ))
+
+    def _reveal_result(self, hider_r, hider_c, seeker_r, seeker_c, hider_idx, seeker_idx):
+        self.ui.reveal_turn_outcome(hider_r, hider_c, seeker_r, seeker_c)
+        self.ui.update_scores(round(self.hider_score, 2), round(self.seeker_score, 2))
+        self.ui.update_round(self.current_round)
+
+        if hider_idx == seeker_idx:
+            self.ui.game_screen.show_round_outcome("SEEKER FOUND HIDER!", "#ff7b72")
+        else:
+            self.ui.game_screen.show_round_outcome("HIDER ESCAPED!", "#58a6ff")
+
+        QTimer.singleShot(2000, self._next_round)
+
+    def _next_round(self):
+        self.ui.set_turn(self.human_role)
+        self.ui.game_screen.clear_markers()
+        self.ui.game_screen.grid_container.setEnabled(True)
+
+    def _handle_reset(self):
+        self.hider_score = 0.0
+        self.seeker_score = 0.0
+        self.current_round = 1
+        self.ui.update_scores(0, 0)
+        self.ui.update_round(1)
+        self.ui.set_turn(self.human_role)
+        self.ui.game_screen.clear_markers()
+        self.ui.game_screen.grid_container.setEnabled(True)
+
+    def _run_simulation(self):
+        hider_result = self.engine.solve(computer_role="hider")
+        seeker_result = self.engine.solve(computer_role="seeker")
+        payoff = self.result.payoff_matrix
+
+        hider_wins = 0
+        seeker_wins = 0
+        h_total = 0.0
+        s_total = 0.0
+
+        for _ in range(100):
+            h_idx = int(np.random.choice(self.result.N, p=hider_result.computer_probabilities))
+            s_idx = int(np.random.choice(self.result.N, p=seeker_result.computer_probabilities))
+            score = float(payoff[h_idx, s_idx])
+            h_total += score
+            s_total -= score
+            if h_idx == s_idx:
+                seeker_wins += 1
+            else:
+                hider_wins += 1
+
+        self.ui.show_simulation_results(
+            hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2)
+        )
