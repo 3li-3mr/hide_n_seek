@@ -1,6 +1,4 @@
-
-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 import numpy as np
 
@@ -23,7 +21,11 @@ class SolverResult:
     grid_cols: int              # N for linear worlds, sqrt(N) for 2-D
     cells: list[WorldCell]      # length N, ordered by flat index
 
-    payoff_matrix: np.ndarray   # shape (N, N) — hider's payoff at [h, s]
+    # Both perspective matrices are always stored.
+    # hider_payoff_matrix[h, s] = hider's payoff when hider→h, seeker→s
+    # seeker_payoff_matrix[h, s] = seeker's payoff (mirror of hider's)
+    hider_payoff_matrix: np.ndarray
+    seeker_payoff_matrix: np.ndarray
 
     computer_role: Literal["hider", "seeker"]
     computer_probabilities: np.ndarray  # shape (N,), sums to 1.0
@@ -33,6 +35,16 @@ class SolverResult:
     lp_A_ub: np.ndarray        # inequality constraint matrix
     lp_b_ub: np.ndarray        # inequality RHS vector
 
-
     proximity_enabled: bool = False
     grid_2d_enabled: bool = False
+
+    @property
+    def payoff_matrix(self) -> np.ndarray:
+        """Backward-compatible alias — always returns the hider-perspective matrix."""
+        return self.hider_payoff_matrix
+
+    def display_matrix(self, human_role: str) -> np.ndarray:
+        """Returns the matrix from the human player's perspective for UI display."""
+        if human_role == "hider":
+            return self.hider_payoff_matrix
+        return self.seeker_payoff_matrix

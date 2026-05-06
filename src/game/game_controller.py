@@ -23,8 +23,6 @@ class GameController:
         self.current_round = 1
 
     def start_game(self, config):
-        # Called when the user clicks "Start Game" or "Start Sim" on the start screen.
-
         is_2d = config["is_2d"]
         self.human_role = config["role"].lower()
         self.hider_score = 0.0
@@ -36,13 +34,11 @@ class GameController:
         else:
             N = config["size_n"]
 
-        # CPU plays the opposite role as human 
+        # CPU plays the opposite role as human
         computer_role = "seeker" if self.human_role == "hider" else "hider"
 
         proximity = config.get("proximity", False)
 
-        # Create the engine and solve the LP
-        # GameEngine generates a random world (random place types)
         self.engine = GameEngine(
             N=N,
             rows=config["rows"] if is_2d else 1,
@@ -51,14 +47,8 @@ class GameController:
             proximity=proximity,
         )
 
-        # solve() returns a SolverResult containing:
-        # -cells: the generated world (each cell has a place type)
-        # -payoff_matrix: N×N matrix of hider payoffs
-        # -computer_probabilities: optimal mixed strategy for the computer
-        # -game_value: expected payoff at Nash equilibrium
         self.result = self.engine.solve(computer_role=computer_role)
 
-        # Convert the config with REAL data for the UI
         # Convert engine cells → format the UI understands
         config["cells"] = [
             {
@@ -69,21 +59,23 @@ class GameController:
             for cell in self.result.cells
         ]
 
-        # Convert the solver result → StrategyDetails (the dataclass the UI expects)
+        # Show the matrix from the HUMAN's perspective in the UI.
+        display_matrix = self.result.display_matrix(self.human_role)
+
         config["strategy"] = StrategyDetails(
-            payoff_matrix=self.result.payoff_matrix.tolist(),
+            payoff_matrix=display_matrix.tolist(),
             probabilities=self.result.computer_probabilities.tolist(),
             game_value=self.result.game_value,
         )
+
         if config["mode"] == "simulation":
             self.ui.route_to_game(config)
             self._run_simulation()
         else:
             self.ui.route_to_game(config)
 
-    # --- GAME LOOP HANDLERS (called by UI after a move) ---
+    # --- GAME LOOP HANDLERS ---
     def handle_action(self, payload):
-
         action = payload.get("action")
         if action == "human_move":
             self._handle_human_move(payload["row"], payload["col"])
@@ -95,13 +87,13 @@ class GameController:
         comp_idx = int(np.random.choice(self.result.N, p=self.result.computer_probabilities))
         comp_cell = self.result.cells[comp_idx]
 
-        # 2. Convert human's 2D/1D click to a flat index
+        # 2. Convert human's click to a flat index
         if self.result.grid_2d_enabled:
             human_idx = human_row * self.result.grid_cols + human_col
         else:
             human_idx = human_col
 
-        # 3. Determine roles for scoring
+        # 3. Determine hider/seeker indices regardless of human role
         if self.human_role == "hider":
             hider_idx, seeker_idx = human_idx, comp_idx
             hider_r, hider_c = human_row, human_col
@@ -111,8 +103,11 @@ class GameController:
             seeker_r, seeker_c = human_row, human_col
             hider_r, hider_c = comp_cell.row, comp_cell.col
 
-        # 4. Compute score
-        score = float(self.result.payoff_matrix[hider_idx, seeker_idx])
+        # 4. Score is ALWAYS read from the hider-perspective matrix.
+        #    hider_payoff_matrix[h, s] > 0 means hider escaped (hider gains).
+        #    hider_payoff_matrix[h, s] < 0 means hider caught (seeker gains).
+        #    Zero-sum: seeker_score is always the negative of hider_score.
+        score = float(self.result.hider_payoff_matrix[hider_idx, seeker_idx])
         self.hider_score += score
         self.seeker_score -= score
         self.current_round += 1
@@ -154,9 +149,12 @@ class GameController:
         self.ui.game_screen.grid_container.setEnabled(True)
 
     def _run_simulation(self):
+        # Solve for both roles — each gets its own optimal strategy
         hider_result = self.engine.solve(computer_role="hider")
         seeker_result = self.engine.solve(computer_role="seeker")
-        payoff = self.result.payoff_matrix
+
+        # Always use the hider-perspective matrix for scoring
+        payoff = self.result.hider_payoff_matrix
 
         hider_wins = 0
         seeker_wins = 0
@@ -175,5 +173,6 @@ class GameController:
                 hider_wins += 1
 
         self.ui.show_simulation_results(
-            hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2), payoff.tolist()
+            hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2),
+            payoff.tolist()
         )
