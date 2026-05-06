@@ -10,19 +10,20 @@ PLACE_TYPE_MAP = {
     "easy": UIPlaceType.EASY,
 }
 
+
 class GameController:
 
     def __init__(self, ui):
         self.ui = ui
-        self.engine = None 
-        self.result = None 
+        self.engine = None
+        self.result = None
         self.human_role = None
         self.hider_score = 0.0
         self.seeker_score = 0.0
         self.current_round = 1
 
     def start_game(self, config):
-        #Called when the user clicks "Start Game" or "Start Sim" on the start screen.
+        # Called when the user clicks "Start Game" or "Start Sim" on the start screen.
 
         is_2d = config["is_2d"]
         self.human_role = config["role"].lower()
@@ -42,17 +43,23 @@ class GameController:
 
         # Create the engine and solve the LP
         # GameEngine generates a random world (random place types)
-        self.engine = GameEngine(N=N, grid_2d=is_2d, proximity=proximity)
+        self.engine = GameEngine(
+            N=N,
+            rows=config["rows"] if is_2d else 1,
+            cols=config["cols"] if is_2d else N,
+            grid_2d=is_2d,
+            proximity=proximity,
+        )
 
-        #solve() returns a SolverResult containing:
+        # solve() returns a SolverResult containing:
         # -cells: the generated world (each cell has a place type)
         # -payoff_matrix: N×N matrix of hider payoffs
         # -computer_probabilities: optimal mixed strategy for the computer
         # -game_value: expected payoff at Nash equilibrium
         self.result = self.engine.solve(computer_role=computer_role)
 
-        #Convert the config with REAL data for the UI
-        #Convert engine cells → format the UI understands
+        # Convert the config with REAL data for the UI
+        # Convert engine cells → format the UI understands
         config["cells"] = [
             {
                 "row": cell.row,
@@ -62,7 +69,7 @@ class GameController:
             for cell in self.result.cells
         ]
 
-        #Convert the solver result → StrategyDetails (the dataclass the UI expects)
+        # Convert the solver result → StrategyDetails (the dataclass the UI expects)
         config["strategy"] = StrategyDetails(
             payoff_matrix=self.result.payoff_matrix.tolist(),
             probabilities=self.result.computer_probabilities.tolist(),
@@ -76,7 +83,7 @@ class GameController:
 
     # --- GAME LOOP HANDLERS (called by UI after a move) ---
     def handle_action(self, payload):
-        
+
         action = payload.get("action")
         if action == "human_move":
             self._handle_human_move(payload["row"], payload["col"])
