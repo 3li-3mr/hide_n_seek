@@ -175,5 +175,5 @@ class GameController:
                 hider_wins += 1
 
         self.ui.show_simulation_results(
-            hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2)
+            hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2), payoff.tolist()
         )

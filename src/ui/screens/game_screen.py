@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
 from PySide6.QtCore import Qt
 from src.ui.components.confirm_dialog import ConfirmDialog
 from src.core.contracts import PlaceType, StrategyDetails
+from typing import List
 
 class GameScreen(QWidget):
     def __init__(self, menu_callback, action_callback):
@@ -367,10 +368,13 @@ class GameScreen(QWidget):
         for btn in self.cell_buttons.values():
             btn.setText("")
 
-    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int):
-        """Builds a beautiful summary card in place of the empty game grid."""
+    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int, payoff: list):
+        """Builds a beautiful summary card and updates the details panel for simulation."""
         self._clear_grid()
         
+        # ---------------------------------------------------------
+        # 1. BUILD THE RESULTS DASHBOARD (LEFT SIDE)
+        # ---------------------------------------------------------
         results_widget = QWidget()
         results_layout = QVBoxLayout()
         results_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -391,7 +395,7 @@ class GameScreen(QWidget):
         lbl_h_score = QLabel(str(hider_score))
         lbl_h_score.setStyleSheet("font-size: 48px; font-weight: bold; color: #ffffff;")
         lbl_h_wins = QLabel(f"{hider_wins} Wins")
-        lbl_h_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #79c0ff;") # Blue highlight
+        lbl_h_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #79c0ff;") 
         
         # --- Seeker Stats ---
         lbl_s_title = QLabel("Seeker Score")
@@ -399,7 +403,7 @@ class GameScreen(QWidget):
         lbl_s_score = QLabel(str(seeker_score))
         lbl_s_score.setStyleSheet("font-size: 48px; font-weight: bold; color: #ffffff;")
         lbl_s_wins = QLabel(f"{seeker_wins} Wins")
-        lbl_s_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff7b72;") # Red highlight
+        lbl_s_wins.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff7b72;")
         
         # Add to grid
         score_layout.addWidget(lbl_h_title, 0, 0, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -415,6 +419,47 @@ class GameScreen(QWidget):
         results_widget.setLayout(results_layout)
 
         self.grid_layout.addWidget(results_widget, 0, 0)
+
+        # ---------------------------------------------------------
+        # 2. UPDATE THE DETAILS PANEL (RIGHT SIDE - MATRIX ONLY)
+        # ---------------------------------------------------------
+        # Clear anything currently in the details panel
+        while self.details_content_layout.count():
+            item = self.details_content_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            elif item.layout() is not None:
+                self._clear_layout(item.layout())
+
+        if payoff:
+            lbl_matrix_title = QLabel("Initial Payoff Matrix")
+            lbl_matrix_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #cdd6f4;")
+            lbl_matrix_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.details_content_layout.addWidget(lbl_matrix_title)
+            
+            matrix_scroll = QScrollArea()
+            matrix_scroll.setWidgetResizable(True)
+            matrix_scroll.setStyleSheet("QScrollArea { border: 1px solid #30363d; border-radius: 8px; background-color: #161b22; }")
+            
+            matrix_content = QWidget()
+            matrix_content.setStyleSheet("background-color: transparent;")
+            
+            matrix_grid = QGridLayout(matrix_content)
+            matrix_grid.setSpacing(8)
+            matrix_grid.setAlignment(Qt.AlignmentFlag.AlignCenter) 
+            
+            for r, row_data in enumerate(payoff):
+                for c, val in enumerate(row_data):
+                    lbl_val = QLabel(str(val))
+                    lbl_val.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    lbl_val.setFixedSize(60, 60)
+                    lbl_val.setStyleSheet("background-color: #21262d; border: 2px solid #30363d; border-radius: 6px; font-size: 18px; font-weight: bold;")
+                    matrix_grid.addWidget(lbl_val, r, c)
+            
+            matrix_scroll.setWidget(matrix_content)
+            # Give it a stretch of 1 so it fills the panel completely
+            self.details_content_layout.addWidget(matrix_scroll, 1)
 
     def _build_legend(self):
         legend_layout = QHBoxLayout()
@@ -439,7 +484,7 @@ class GameScreen(QWidget):
 
         # Replace these hex values with the actual colors from your theme.qss
         legend_layout.addLayout(create_legend_item("Hard", "#ff7b72"))     # Example: Red
-        legend_layout.addLayout(create_legend_item("Neutral", "#21262d"))  # Example: Dark Grey
+        legend_layout.addLayout(create_legend_item("Neutral", "#8b949e"))  # Example: Dark Grey
         legend_layout.addLayout(create_legend_item("Easy", "#58a6ff"))     # Example: Blue
 
         return legend_layout

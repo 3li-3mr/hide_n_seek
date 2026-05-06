@@ -3,6 +3,7 @@ from src.ui.screens.start_screen import StartScreen
 from src.ui.screens.game_screen import GameScreen
 from src.ui.components.confirm_dialog import ConfirmDialog
 from src.game.game_controller import GameController
+from typing import List
 
 class UIManager(QMainWindow):
     def __init__(self):
@@ -50,7 +51,7 @@ class UIManager(QMainWindow):
     def reveal_turn_outcome(self, hider_r: int, hider_c: int, seeker_r: int, seeker_c: int):
         self.game_screen.reveal_choices(hider_r, hider_c, seeker_r, seeker_c)
 
-    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int):
+    def show_simulation_results(self, hider_wins: int, seeker_wins: int, hider_score: int, seeker_score: int, payoff: List[List[float]]):
         self.game_screen.show_simulation_results(
-            hider_wins, seeker_wins, hider_score, seeker_score
+            hider_wins, seeker_wins, hider_score, seeker_score, payoff
         )
