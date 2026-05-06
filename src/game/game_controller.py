@@ -172,6 +172,10 @@ class GameController:
             else:
                 hider_wins += 1
 
+        # Update the interactive scoreboard to match the simulation results
+        self.ui.update_scores(round(h_total, 2), round(s_total, 2))
+        self.ui.update_round(100)
+
         self.ui.show_simulation_results(
             hider_wins, seeker_wins, round(h_total, 2), round(s_total, 2),
             payoff.tolist()
