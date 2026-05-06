@@ -1,5 +1,4 @@
-
-
+import math
 import random
 from typing import Optional
 
@@ -13,18 +12,26 @@ _PLACE_TYPES: list[PlaceType] = ["hard", "neutral", "easy"]
 
 def generate_world(
     N: int,
+    rows: int = 1,
+    cols: int = None,
     grid_2d: bool = False,
     seed: Optional[int] = None,
 ) -> list[WorldCell]:
+
+
+    if grid_2d and cols is None:
+        cols = int(math.isqrt(N))
+        rows = cols
+    else:
+        cols = cols or N
 
     rng = random.Random(seed)
     cells: list[WorldCell] = []
 
     if grid_2d:
-        side = int(N ** 0.5)
-        for row in range(side):
-            for col in range(side):
-                idx = row * side + col
+        for row in range(rows):
+            for col in range(cols):
+                idx = row * cols + col
                 place_type: PlaceType = rng.choice(_PLACE_TYPES)
                 cells.append(WorldCell(index=idx, row=row, col=col, place_type=place_type))
     else:

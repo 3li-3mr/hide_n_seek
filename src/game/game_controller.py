@@ -90,8 +90,7 @@ class GameController:
 
         # 2. Convert human's 2D/1D click to a flat index
         if self.result.grid_2d_enabled:
-            side = int(self.result.N ** 0.5)
-            human_idx = human_row * side + human_col
+            human_idx = human_row * self.result.grid_cols + human_col
         else:
             human_idx = human_col
 

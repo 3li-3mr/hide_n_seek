@@ -1,13 +1,4 @@
-"""
-tests.py
---------
-Self-contained tests for the engine package.
 
-Run from the *parent* directory of the engine/ folder:
-    python -m engine.tests
-or with pytest:
-    pytest engine/tests.py -v
-"""
 
 import sys
 import math
@@ -99,6 +90,24 @@ try:
     _ok("2-D world (9 cells) has correct 3×3 grid positions")
 except AssertionError as e:
     _fail("2-D world (9 cells) has correct 3×3 grid positions", str(e))
+
+# 1-d2  2-D world: correct n×m dimensions (3×4)
+cells_2d_nm = generate_world(N=12, rows=3, cols=4, grid_2d=True, seed=42)
+try:
+    assert len(cells_2d_nm) == 12
+    nm_rows = {c.row for c in cells_2d_nm}
+    nm_cols = {c.col for c in cells_2d_nm}
+    assert nm_rows == {0, 1, 2} and nm_cols == {0, 1, 2, 3}
+    _ok("2-D world (12 cells) has correct 3×4 grid positions")
+except AssertionError as e:
+    _fail("2-D world (12 cells) has correct 3×4 grid positions", str(e))
+
+# 1-d3  n×m flat indices are correct (row * cols + col)
+try:
+    assert all(c.index == c.row * 4 + c.col for c in cells_2d_nm)
+    _ok("3×4 world flat indices match row * cols + col")
+except AssertionError:
+    _fail("3×4 world flat indices", "index mismatch found")
 
 # 1-e  Reproducibility with seed
 cells_a = generate_world(N=5, seed=7)
@@ -340,6 +349,25 @@ try:
     _ok("2-D world (9 cells) produces 9×9 payoff and 3×3 grid dims")
 except Exception as e:
     _fail("2-D world", str(e))
+
+# 5-e2  n×m world (3×4 = 12 cells)
+try:
+    eng_nm = GameEngine(N=12, rows=3, cols=4, grid_2d=True, seed=7)
+    r_nm = eng_nm.solve(computer_role="hider")
+    assert r_nm.grid_rows == 3 and r_nm.grid_cols == 4
+    assert r_nm.payoff_matrix.shape == (12, 12)
+    assert len(r_nm.computer_probabilities) == 12
+    assert abs(r_nm.computer_probabilities.sum() - 1.0) < 1e-6
+    _ok("n×m world (3×4, 12 cells) produces 12×12 payoff and 3×4 grid dims")
+except Exception as e:
+    _fail("n×m world (3×4)", str(e))
+
+# 5-e3  n×m non-matching rows×cols raises ValueError
+try:
+    GameEngine(N=12, rows=3, cols=5, grid_2d=True)
+    _fail("rows×cols≠N raises ValueError", "no exception raised")
+except ValueError:
+    _ok("GameEngine(N=12, rows=3, cols=5, grid_2d=True) raises ValueError")
 
 # 5-f  Proximity enabled
 try:
