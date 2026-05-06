@@ -23,13 +23,6 @@ def load_custom_font():
     
     # Register the font with the OS memory for this app
     font_id = QFontDatabase.addApplicationFont(font_path)
-    
-    if font_id == -1:
-        print(f"Warning: Failed to load font at {font_path}")
-    else:
-        # Get the exact family name to use in your QSS
-        family_name = QFontDatabase.applicationFontFamilies(font_id)[0]
-        print(f"Successfully loaded font family: {family_name}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

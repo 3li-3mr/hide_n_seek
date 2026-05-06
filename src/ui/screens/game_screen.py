@@ -32,8 +32,9 @@ class GameScreen(QWidget):
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(5) 
         self.grid_container.setLayout(self.grid_layout)
-        
         left_layout.addWidget(self.grid_container)
+        left_layout.addSpacing(30)
+        left_layout.addLayout(self._build_legend())
         self.left_container.setLayout(left_layout)
 
         # 2. Right Half (The Details Panel)
@@ -187,9 +188,14 @@ class GameScreen(QWidget):
     def _handle_main_menu(self):
         dialog = ConfirmDialog("Main Menu", "End current game and return to menu?")
         if dialog.exec():
+            self.lbl_score_hider.setText("0")
+            self.lbl_score_seeker.setText("0")
+            # NOTIFY BACKEND: Tell it to reset internal memory
+            self.action_callback({"action": "reset_game"})
             self.window().setProperty("active_turn", "neutral")
             self.window().style().unpolish(self.window())
             self.window().style().polish(self.window())
+            self.right_container.setVisible(False)
             self.menu_callback()
 
     # notify game class
@@ -409,3 +415,31 @@ class GameScreen(QWidget):
         results_widget.setLayout(results_layout)
 
         self.grid_layout.addWidget(results_widget, 0, 0)
+
+    def _build_legend(self):
+        legend_layout = QHBoxLayout()
+        legend_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        legend_layout.setSpacing(25)
+
+        # Helper function to generate a legend item
+        def create_legend_item(text: str, color_hex: str):
+            item_layout = QHBoxLayout()
+            item_layout.setSpacing(8)
+            
+            color_box = QLabel()
+            color_box.setFixedSize(16, 16)
+            color_box.setStyleSheet(f"background-color: {color_hex}; border-radius: 4px; border: 1px solid #30363d;")
+            
+            label = QLabel(text)
+            label.setStyleSheet("color: #8b949e; font-size: 14px; font-weight: bold;")
+            
+            item_layout.addWidget(color_box)
+            item_layout.addWidget(label)
+            return item_layout
+
+        # Replace these hex values with the actual colors from your theme.qss
+        legend_layout.addLayout(create_legend_item("Hard", "#ff7b72"))     # Example: Red
+        legend_layout.addLayout(create_legend_item("Neutral", "#21262d"))  # Example: Dark Grey
+        legend_layout.addLayout(create_legend_item("Easy", "#58a6ff"))     # Example: Blue
+
+        return legend_layout
