@@ -140,6 +140,9 @@ class GameScreen(QWidget):
         if "strategy" in config:
             self.update_details(config["strategy"])
 
+        self.grid_layout.setSpacing(5)
+        self.grid_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         cells = config.get("cells", [])
         for r in range(self.board_rows):
             for c in range(self.board_cols):
