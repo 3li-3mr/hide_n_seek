@@ -13,8 +13,8 @@ PlaceType = Literal["hard", "neutral", "easy"]
 
 HIDER_WIN_SCORE: dict[str, int] = {
     "hard":    1,
-    "neutral": 2,
-    "easy":    3,
+    "neutral": 1,
+    "easy":    2,
 }
 
 HIDER_LOSE_SCORE: dict[str, int] = {
