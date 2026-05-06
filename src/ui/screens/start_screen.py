@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                                QLabel, QPushButton, QRadioButton, 
-                               QFrame, QLineEdit, QButtonGroup)
+                               QFrame, QLineEdit, QButtonGroup, QCheckBox)
 from PySide6.QtCore import Qt
 
 class StartScreen(QWidget):
@@ -67,6 +67,11 @@ class StartScreen(QWidget):
         role_layout.addWidget(self.radio_seeker)
         card_layout.addLayout(role_layout)
 
+        # proximity selection
+        self.check_proximity = QCheckBox("Enable Proximity Penalties")
+        self.check_proximity.setStyleSheet("color: #ffffff; font-size: 14px; margin-bottom: 15px;")
+        card_layout.addWidget(self.check_proximity)
+
         # buttons
         self.btn_start = QPushButton("Start Game")
         self.btn_start.setObjectName("BtnStart")
@@ -122,5 +127,6 @@ class StartScreen(QWidget):
             "rows": rows,
             "cols": cols,
             "role": role,
-            "mode": mode
+            "mode": mode,
+            "proximity": self.check_proximity.isChecked()
         }

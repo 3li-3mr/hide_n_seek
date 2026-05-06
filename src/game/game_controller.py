@@ -38,9 +38,11 @@ class GameController:
         # CPU plays the opposite role as human 
         computer_role = "seeker" if self.human_role == "hider" else "hider"
 
+        proximity = config.get("proximity", False)
+
         # Create the engine and solve the LP
         # GameEngine generates a random world (random place types)
-        self.engine = GameEngine(N=N, grid_2d=is_2d)
+        self.engine = GameEngine(N=N, grid_2d=is_2d, proximity=proximity)
 
         #solve() returns a SolverResult containing:
         # -cells: the generated world (each cell has a place type)
