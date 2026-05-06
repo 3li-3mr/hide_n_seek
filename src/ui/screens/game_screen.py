@@ -1,4 +1,4 @@
-import random
+
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                                QLabel, QPushButton, QGridLayout ,QFrame, QScrollArea)
 from PySide6.QtCore import Qt
@@ -122,10 +122,6 @@ class GameScreen(QWidget):
         if config["mode"] == "simulation":
             self.lbl_turn.setText("SIMULATING 100 ROUNDS...")
             self.lbl_player_role.setText("( CPU vs CPU )")
-            
-            # TEMPORARY MOCK: Trigger the simulation results popup immediately for testing
-            # In the final version, the backend will run a loop and then call this.
-            self.window().show_simulation_results(45, 55, 120, 150)
             return
 
         self.board_rows = config["rows"] if config["is_2d"] else 1
@@ -138,40 +134,28 @@ class GameScreen(QWidget):
             PlaceType.EASY: "CellEasy"
         }
 
-        # --- MOCK STRATEGY DETAILS GENERATION (Inside setup_board) ---
-        raw_probs = [random.random() for _ in range(total_cells)]
-        total_prob = sum(raw_probs)
-        normalized_probs = [p / total_prob for p in raw_probs]
-        
-        # NEW: Generate a fake 2D payoff matrix matching the grid dimensions
-        mock_matrix = [[random.randint(-10, 10) for _ in range(self.board_cols)] for _ in range(self.board_rows)]
-        
-        mock_details = StrategyDetails(
-            payoff_matrix=mock_matrix,
-            probabilities=normalized_probs,
-            game_value=random.uniform(-5.0, 5.0)
-        )
-        self.update_details(mock_details)
-        # ----------------------------------------
+        if "strategy" in config:
+            self.update_details(config["strategy"])
 
+        cells = config.get("cells", [])
         for r in range(self.board_rows):
             for c in range(self.board_cols):
                 btn = QPushButton()
                 btn.setFixedSize(60, 60)
-                
-                # Make the font large for the H and S markers
-                btn.setStyleSheet("font-size: 24px; font-weight: bold;") 
-                
-                mock_place_type = random.choice(list(PlaceType)) 
-                css_class = type_to_css[mock_place_type]
-                btn.setProperty("class", css_class) 
-                
+                btn.setStyleSheet("font-size: 24px; font-weight: bold;")
+
+                cell_idx = r * self.board_cols + c
+                if cell_idx < len(cells):
+                    place_type = cells[cell_idx]["place_type"]
+                else:
+                    place_type = PlaceType.NEUTRAL
+                css_class = type_to_css[place_type]
+                btn.setProperty("class", css_class)
+
                 btn.clicked.connect(lambda checked=False, r=r, c=c: self._handle_grid_click(r, c))
                 self.grid_layout.addWidget(btn, r, c)
-                
-                # Store the button reference using a tuple of its coordinates
                 self.cell_buttons[(r, c)] = btn
-        self.update_turn("hider")
+        self.update_turn(self.human_role)
 
     def show_round_outcome(self, message: str, color_hex: str):
         """Temporarily overrides the turn text to show who won the round."""
